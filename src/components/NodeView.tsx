@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore, NodeData, COLORS } from '../store/useStore';
 import { Plus, Trash, Copy, Palette } from 'lucide-react';
 
@@ -10,7 +10,7 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
   const { 
     projects, activeProjectId,
     moveNodeAndChildren, updateNode, deleteNode, selectNode, selectedNodeId, 
-    addNode, duplicateNodeSubtree, addEdge
+    addNode, duplicateNodeSubtree, addEdge, _pushHistory
   } = useStore();
   
   const activeProject = projects.find(p => p.id === activeProjectId);
@@ -19,6 +19,7 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
   const isSelected = selectedNodeId === node.id;
   const [isEditing, setIsEditing] = useState(false);
   const [showColors, setShowColors] = useState(false);
+  const historyPushedRef = useRef(false);
   
   const isRoot = node.id === 'root';
   const width = node.width || (isRoot ? 192 : 160);
@@ -37,8 +38,13 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
     let prevX = e.clientX;
     let prevY = e.clientY;
     let hasMoved = false;
+    let pushedForDrag = false;
     
     const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!pushedForDrag) {
+        _pushHistory();
+        pushedForDrag = true;
+      }
       hasMoved = true;
       const dx = (moveEvent.clientX - prevX) / canvas.scale;
       const dy = (moveEvent.clientY - prevY) / canvas.scale;
@@ -92,8 +98,13 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
     const startY = e.clientY;
     const startW = width;
     const startH = height;
+    let pushedForResize = false;
 
     const handleMove = (moveEvent: PointerEvent) => {
+        if (!pushedForResize) {
+           _pushHistory();
+           pushedForResize = true;
+        }
         const dx = (moveEvent.clientX - startX) / canvas.scale;
         const dy = (moveEvent.clientY - startY) / canvas.scale;
         // The container is rtl, meaning dx grows to the left generally, but x is absolute.
@@ -137,14 +148,20 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
       style={{ transform: `translate(${node.x}px, ${node.y}px)`, width: `${width}px`, height: `${height}px` }}
       onPointerDown={handlePointerDown}
       onClick={() => { if(!isSelected) selectNode(node.id) }}
-      onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+      onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); historyPushedRef.current = false; }}
     >
       {isEditing ? (
         <textarea 
           autoFocus
           className="w-full h-full bg-transparent border-none text-center resize-none outline-none focus:ring-0 placeholder:opacity-50 font-medium text-inherit flex items-center"
           value={node.text}
-          onChange={e => updateNode(node.id, { text: e.target.value })}
+          onChange={e => {
+            if (!historyPushedRef.current) {
+              _pushHistory();
+              historyPushedRef.current = true;
+            }
+            updateNode(node.id, { text: e.target.value })
+          }}
           onBlur={() => setIsEditing(false)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setIsEditing(false); } }}
           style={{ lineHeight: 'normal', fontSize: `${fontSize}px` }}
@@ -187,7 +204,7 @@ export const NodeView: React.FC<NodeViewProps> = ({ node }) => {
                    {COLORS.map(c => (
                      <button
                        key={c}
-                       onPointerDown={() => { updateNode(node.id, { color: c }); setShowColors(false); }}
+                       onPointerDown={() => { _pushHistory(); updateNode(node.id, { color: c }); setShowColors(false); }}
                        className={`w-6 h-6 rounded-full border hover:scale-110 transition-transform ${isLight ? 'border-black/20' : 'border-white/40'}`}
                        style={{ backgroundColor: getSolidColor(c) }}
                      />

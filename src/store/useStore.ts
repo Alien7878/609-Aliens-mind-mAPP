@@ -183,7 +183,6 @@ export const useStore = create<AppState>()(
       },
 
       updateNode: (id, data) => {
-        get()._pushHistory();
         set((state) => {
         const proj = state.projects.find(p => p.id === state.activeProjectId);
         if (!proj) return state;
@@ -196,7 +195,6 @@ export const useStore = create<AppState>()(
       },
 
       moveNodeAndChildren: (id, dx, dy) => {
-        get()._pushHistory();
         set((state) => {
         const proj = state.projects.find(p => p.id === state.activeProjectId);
         if (!proj) return state;

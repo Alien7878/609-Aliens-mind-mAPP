@@ -13,8 +13,7 @@ export default function Canvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
   
   const proj = projects.find(p => p.id === activeProjectId);
-  if (!proj) return null;
-  const { nodes, edges, canvas } = proj;
+  const { nodes = [], edges = [], canvas = { x: 0, y: 0, scale: 1 } } = proj || {};
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Only pan on left or middle click directly on the canvas background
@@ -93,6 +92,8 @@ export default function Canvas() {
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [canvas, setCanvas]);
+
+  if (!proj) return null;
 
   return (
     <div 

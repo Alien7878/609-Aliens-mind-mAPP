@@ -9,6 +9,9 @@ interface EdgeViewProps {
 
 export const EdgeView: React.FC<EdgeViewProps> = ({ edge, nodes }) => {
   const { selectEdge, selectedEdgeId, deleteEdge } = useStore();
+  const theme = useStore(state => state.theme);
+  const isLight = theme === 'light';
+
   const source = nodes.find(n => n.id === edge.sourceId);
   const target = nodes.find(n => n.id === edge.targetId);
 
@@ -38,8 +41,6 @@ export const EdgeView: React.FC<EdgeViewProps> = ({ edge, nodes }) => {
 
   const midX = sx + (tx - sx) / 2;
   const midY = sy + (ty - sy) / 2;
-
-  const isLight = useStore(state => state.theme) === 'light';
 
   return (
     <>
